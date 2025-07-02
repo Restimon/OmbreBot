@@ -15,6 +15,11 @@ def load_data():
     with open(DATA_FILE, "r") as f:
         return json.load(f)
 
+def reset_cooldown(data, user_id):
+    if user_id not in data:
+        data[user_id] = {}
+    data[user_id]["last_used"] = datetime.utcnow().isoformat()
+
 def setup(bot: commands.Bot):
     @bot.tree.command(name="profile", description="Affiche ta team actuelle et le temps avant ta prochaine roulette.")
     @app_commands.describe(user="Voir le profil d'un autre joueur (optionnel)")
