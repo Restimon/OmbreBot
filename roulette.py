@@ -28,7 +28,7 @@ def save_data(data):
 def setup(bot: commands.Bot):
     @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
-    async def roulette(interaction: discord.Interaction, nombre: int ):
+    async def roulette(interaction: discord.Interaction, nombre: int):
         if nombre < 1 or nombre > 8:
             await interaction.response.send_message("❌ Le nombre doit être entre 1 et 8.", ephemeral=True)
             return
@@ -49,6 +49,14 @@ def setup(bot: commands.Bot):
 
         previous_team = data.get(user_id, {}).get("current_team", [])
         available = [c for c in ALL_CLASSES if c not in previous_team]
+
+        if nombre > len(available):
+            await interaction.followup.send(
+                f"❌ Impossible de tirer {nombre} classes. Il n'y a que {len(available)} classes disponibles.",
+                ephemeral=True
+            )
+            return
+
         team = random.sample(available, nombre)
 
         embed = discord.Embed(title="🎲 Roulette en cours...", color=discord.Color.orange())
@@ -61,7 +69,6 @@ def setup(bot: commands.Bot):
             embed.description = "\n".join(f"• {c}" for c in current_display)
             await message.edit(embed=embed)
 
-        # Enregistrement des données
         data[user_id] = {
             "current_team": team,
             "previous_team": previous_team,
@@ -70,7 +77,6 @@ def setup(bot: commands.Bot):
         }
         save_data(data)
 
-        # Reroll unique
         if len(team) > 1:
             embed.title = "🎯 Tu peux reroll **1 seul** personnage. Choisis via les réactions ci-dessous (30s)"
             await message.edit(embed=embed)
@@ -92,8 +98,6 @@ def setup(bot: commands.Bot):
                 rerolled_class = team[index]
 
                 reroll_pool = [c for c in ALL_CLASSES if c not in team]
-                if rerolled_class in reroll_pool:
-                    reroll_pool.remove(rerolled_class)
 
                 new_class = random.choice(reroll_pool)
                 team[index] = new_class
@@ -102,11 +106,14 @@ def setup(bot: commands.Bot):
                 embed.description = "\n".join(f"• {c}" for c in team)
                 await message.edit(embed=embed)
 
-                # Sauvegarde post-reroll
                 data[user_id]["current_team"] = team
                 data[user_id]["history"].append(new_class)
                 save_data(data)
 
             except asyncio.TimeoutError:
                 embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
+                description = f"La team de {interaction.user.display_name} est composée de :\n\n"
+                description += "\n".join(f"• {c}" for c in team)
+                description += "\n\nAinsi, la roulette a parlé !"
+                embed.description = description
                 await message.edit(embed=embed)
