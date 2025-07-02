@@ -15,7 +15,7 @@ async def on_ready():
     await bot.tree.sync()
     print(f"✅ Connecté en tant que {bot.user} — commandes globales synchronisées.")
 
-# Enregistre la commande /roulette
+# Enregistre les commandes
 roulette.setup(bot)
 profile.setup(bot)
 giveaway.setup(bot)
