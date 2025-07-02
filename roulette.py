@@ -15,7 +15,7 @@ ALL_CLASSES = [
 ]
 
 GIF_PROGRESS = "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdngwZWtzYzlyOG95YXFuNHNkbmxxYnFoZWd6bW5sODhtbGJtaDBybSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf2YTgF5upXUTm0/giphy.gif"
-GIF_FINAL = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif"
+GIF_FINAL = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9uZXJhbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif"
 
 def load_data():
     if not os.path.exists(DATA_FILE):
@@ -47,13 +47,19 @@ def setup(bot: commands.Bot):
         data = load_data()
         now = datetime.utcnow()
 
-        # Cooldown 1h
-        if user_id in data:
-            last_time = datetime.fromisoformat(data[user_id]["last_used"])
-            if now < last_time + timedelta(hours=1):
-                remaining = (last_time + timedelta(hours=1)) - now
+        # Cooldown 1h ou 5min selon le type de cooldown stocké
+        cooldown_type = data.get(user_id, {}).get("cooldown_type", "roulette")
+        last_time_str = data.get(user_id, {}).get("last_used")
+        if last_time_str:
+            last_time = datetime.fromisoformat(last_time_str)
+            if cooldown_type == "roulette":
+                cooldown_duration = timedelta(hours=1)
+            else:
+                cooldown_duration = timedelta(minutes=5)
+            if now < last_time + cooldown_duration:
+                remaining = (last_time + cooldown_duration) - now
                 await interaction.followup.send(
-                    f"⏳ Tu dois attendre encore {format_timedelta(remaining)} avant de relancer une roulette.",
+                    f"⏳ Tu dois attendre encore {format_timedelta(remaining)} avant de relancer la roulette.",
                     ephemeral=True
                 )
                 return
@@ -85,11 +91,12 @@ def setup(bot: commands.Bot):
         embed.set_image(url=GIF_FINAL)
         await message.edit(embed=embed)
 
-        # Enregistrement
+        # Enregistrement cooldown type roulette 1h
         data[user_id] = {
             "current_team": team,
             "previous_team": previous_team,
-            "last_used": now.isoformat()
+            "last_used": now.isoformat(),
+            "cooldown_type": "roulette"
         }
         save_data(data)
 
@@ -130,9 +137,22 @@ def setup(bot: commands.Bot):
                 embed.set_image(url=GIF_FINAL)
                 await message.edit(embed=embed)
 
+                # Suppression des réactions après reroll
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
+
+                # Enregistrement cooldown reroll 5 minutes
                 data[user_id]["current_team"] = team
+                data[user_id]["last_used"] = datetime.utcnow().isoformat()
+                data[user_id]["cooldown_type"] = "reroll"
                 save_data(data)
 
             except asyncio.TimeoutError:
                 embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
                 await message.edit(embed=embed)
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
