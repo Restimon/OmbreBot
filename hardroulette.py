@@ -113,4 +113,29 @@ def setup(bot: commands.Bot):
 
             try:
                 reaction, user = await bot.wait_for("reaction_add", timeout=30.0, check=check)
-                index = emojis.index(str(reaction.em
+                index = emojis.index(str(reaction.emoji))
+                rerolled_class = team[index]
+
+                reroll_pool = [c for c in VALID_CLASSES if c not in team]
+                # Juste au cas où retirer la classe choisie si elle est dedans
+                if rerolled_class in reroll_pool:
+                    reroll_pool.remove(rerolled_class)
+
+                if not reroll_pool:
+                    await interaction.followup.send("❌ Pas assez de classes disponibles pour reroll.", ephemeral=True)
+                    return
+
+                new_class = random.choice(reroll_pool)
+                team[index] = new_class
+
+                embed.title = "✅ Reroll effectué !"
+                embed.description = "\n".join(f"• {c}" for c in team)
+                embed.set_image(url=GIF_FINAL)
+                await message.edit(embed=embed)
+
+                data[user_id]["current_team"] = team
+                save_data(data)
+
+            except asyncio.TimeoutError:
+                embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
+                await message.edit(embed=embed)
