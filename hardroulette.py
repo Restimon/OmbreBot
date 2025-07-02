@@ -49,11 +49,17 @@ def setup(bot: commands.Bot):
         data = load_data()
         now = datetime.utcnow()
 
-        # Cooldown 1h
-        if user_id in data:
-            last_time = datetime.fromisoformat(data[user_id]["last_used"])
-            if now < last_time + timedelta(hours=1):
-                remaining = (last_time + timedelta(hours=1)) - now
+        # Cooldown 1h ou 5min selon le cooldown_type
+        cooldown_type = data.get(user_id, {}).get("cooldown_type", "hardroulette")
+        last_time_str = data.get(user_id, {}).get("last_used")
+        if last_time_str:
+            last_time = datetime.fromisoformat(last_time_str)
+            if cooldown_type == "hardroulette":
+                cooldown_duration = timedelta(hours=1)
+            else:
+                cooldown_duration = timedelta(minutes=5)
+            if now < last_time + cooldown_duration:
+                remaining = (last_time + cooldown_duration) - now
                 await interaction.followup.send(
                     f"⏳ Tu dois attendre encore {format_timedelta(remaining)} avant de relancer la hardroulette.",
                     ephemeral=True
@@ -87,11 +93,12 @@ def setup(bot: commands.Bot):
         embed.set_image(url=GIF_FINAL)
         await message.edit(embed=embed)
 
-        # Enregistrement
+        # Enregistrement cooldown type hardroulette 1h
         data[user_id] = {
             "current_team": team,
             "previous_team": previous_team,
-            "last_used": now.isoformat()
+            "last_used": now.isoformat(),
+            "cooldown_type": "hardroulette"
         }
         save_data(data)
 
@@ -117,7 +124,6 @@ def setup(bot: commands.Bot):
                 rerolled_class = team[index]
 
                 reroll_pool = [c for c in VALID_CLASSES if c not in team]
-                # Juste au cas où retirer la classe choisie si elle est dedans
                 if rerolled_class in reroll_pool:
                     reroll_pool.remove(rerolled_class)
 
@@ -133,9 +139,22 @@ def setup(bot: commands.Bot):
                 embed.set_image(url=GIF_FINAL)
                 await message.edit(embed=embed)
 
+                # Supprime les réactions après reroll
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
+
+                # Enregistrement cooldown reroll 5 minutes
                 data[user_id]["current_team"] = team
+                data[user_id]["last_used"] = datetime.utcnow().isoformat()
+                data[user_id]["cooldown_type"] = "reroll"
                 save_data(data)
 
             except asyncio.TimeoutError:
                 embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
                 await message.edit(embed=embed)
+                try:
+                    await message.clear_reactions()
+                except:
+                    pass
