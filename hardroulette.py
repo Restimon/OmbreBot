@@ -99,25 +99,35 @@ def setup(bot: commands.Bot):
                 reaction, user = await bot.wait_for("reaction_add", timeout=30.0, check=check)
                 index = emojis.index(str(reaction.emoji))
                 rerolled_class = team[index]
-
+            
                 reroll_pool = [c for c in VALID_CLASSES if c not in team]
-
                 new_class = random.choice(reroll_pool)
                 team[index] = new_class
-
+            
                 embed.title = "✅ Reroll effectué !"
                 embed.description = "\n".join(f"• {c}" for c in team)
                 await message.edit(embed=embed)
-
+            
                 data[user_id]["current_team"] = team
                 data[user_id]["history"].append(new_class)
                 save_data(data)
-
+            
+                # Enlever les réactions du bot et de l'utilisateur
+                for emoji in emojis[:len(team)]:
+                    await message.remove_reaction(emoji, bot.user)
+                    await message.remove_reaction(emoji, interaction.user)
+            
             except asyncio.TimeoutError:
                 embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
-                description = f"La team de {interaction.user.display_name} est composée de :\n\n"
+                description = f"La team de {interaction.user.mention} est composée de :\n\n"
                 description += "\n".join(f"• {c}" for c in team)
                 description += "\n\nAinsi, la roulette a parlé !"
                 embed.description = description
-                embed.set_image(url="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif")
+                embed.set_thumbnail(url=interaction.user.display_avatar.url)
                 await message.edit(embed=embed)
+            
+                # Enlever les réactions du bot et de l'utilisateur aussi en cas de timeout
+                for emoji in emojis[:len(team)]:
+                    await message.remove_reaction(emoji, bot.user)
+                    await message.remove_reaction(emoji, interaction.user)
+
