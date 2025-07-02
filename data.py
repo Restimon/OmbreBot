@@ -41,4 +41,17 @@ def set_current_team(data, user_id: str, team: list):
     ensure_user(data, user_id)
     data[user_id]["previous_team"] = data[user_id].get("current_team", [])
     data[user_id]["current_team"] = team
+    # Ajoute la team au history, en évitant les doublons facultativement
     data[user_id]["history"] = data[user_id].get("history", []) + team
+
+def get_current_team(data, user_id: str):
+    ensure_user(data, user_id)
+    return data[user_id].get("current_team", [])
+
+def get_previous_team(data, user_id: str):
+    ensure_user(data, user_id)
+    return data[user_id].get("previous_team", [])
+
+def get_history(data, user_id: str):
+    ensure_user(data, user_id)
+    return data[user_id].get("history", [])
