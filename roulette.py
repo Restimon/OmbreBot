@@ -28,7 +28,7 @@ def save_data(data):
 def setup(bot: commands.Bot):
     @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
-    async def roulette(interaction: discord.Interaction, nombre: int = 4):
+    async def roulette(interaction: discord.Interaction, nombre: int ):
         if nombre < 1 or nombre > 8:
             await interaction.response.send_message("❌ Le nombre doit être entre 1 et 8.", ephemeral=True)
             return
