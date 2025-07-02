@@ -1,3 +1,5 @@
+# profile.py
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -22,14 +24,28 @@ def setup(bot: commands.Bot):
         user_id = str(user.id)
 
         data = load_data()
-        embed = discord.Embed(title=f"📜 Profil de {user.display_name}", color=discord.Color.blurple())
+        embed = discord.Embed(
+            title=f"📜 Profil de {user.display_name}",
+            color=discord.Color.blurple()
+        )
+
+        # Ajout de la photo de profil (PdP)
+        embed.set_thumbnail(url=user.display_avatar.url)
 
         # Team actuelle
         team = data.get(user_id, {}).get("current_team", [])
         if team:
-            embed.add_field(name="🎯 Team actuelle", value="\n".join(f"• {cls}" for cls in team), inline=False)
+            embed.add_field(
+                name="🎯 Team actuelle",
+                value="\n".join(f"• {cls}" for cls in team),
+                inline=False
+            )
         else:
-            embed.add_field(name="🎯 Team actuelle", value="Aucune team enregistrée.", inline=False)
+            embed.add_field(
+                name="🎯 Team actuelle",
+                value="Aucune team enregistrée.",
+                inline=False
+            )
 
         # Cooldown
         last_used_str = data.get(user_id, {}).get("last_used")
@@ -41,10 +57,22 @@ def setup(bot: commands.Bot):
                 remaining = cooldown_end - now
                 minutes = int(remaining.total_seconds() // 60)
                 seconds = int(remaining.total_seconds() % 60)
-                embed.add_field(name="⏱️ Cooldown", value=f"{minutes}m {seconds}s restants", inline=False)
+                embed.add_field(
+                    name="⏱️ Cooldown",
+                    value=f"{minutes}m {seconds}s restants",
+                    inline=False
+                )
             else:
-                embed.add_field(name="⏱️ Cooldown", value="Disponible ✅", inline=False)
+                embed.add_field(
+                    name="⏱️ Cooldown",
+                    value="Disponible ✅",
+                    inline=False
+                )
         else:
-            embed.add_field(name="⏱️ Cooldown", value="Jamais utilisé", inline=False)
+            embed.add_field(
+                name="⏱️ Cooldown",
+                value="Jamais utilisé",
+                inline=False
+            )
 
         await interaction.response.send_message(embed=embed)
