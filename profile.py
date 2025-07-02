@@ -3,7 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 import json
 import os
-import data
 from datetime import datetime, timedelta
 from collections import Counter
 
@@ -29,7 +28,7 @@ def setup(bot: commands.Bot):
             color=discord.Color.blurple()
         )
 
-        # Ajout de la photo de profil (PdP)
+        # Photo de profil
         embed.set_thumbnail(url=user.display_avatar.url)
 
         # Team actuelle
@@ -47,12 +46,12 @@ def setup(bot: commands.Bot):
                 inline=False
             )
 
-        # Cooldown 5 minutes (comme dans roulette)
+        # Cooldown 5 minutes
         last_used_str = data.get(user_id, {}).get("last_used")
         if last_used_str:
             last_used = datetime.fromisoformat(last_used_str)
             now = datetime.utcnow()
-            cooldown_end = last_used + timedelta(minutes=5)  # 5 minutes cooldown
+            cooldown_end = last_used + timedelta(minutes=5)
             if now < cooldown_end:
                 remaining = cooldown_end - now
                 minutes = int(remaining.total_seconds() // 60)
@@ -75,7 +74,7 @@ def setup(bot: commands.Bot):
                 inline=False
             )
 
-        # Stat : classe la plus tirée
+        # Classe la plus tirée
         history = data.get(user_id, {}).get("history", [])
         if history:
             counts = Counter(history)
