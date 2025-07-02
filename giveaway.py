@@ -4,7 +4,11 @@ from discord import app_commands
 import asyncio
 import re
 import random
+import json
+import os
 from datetime import datetime, timedelta
+
+DATA_FILE = "giveaway_data.json"
 
 def parse_duration(duration_str):
     regex = r"(\d+)([smhd])"
@@ -14,20 +18,27 @@ def parse_duration(duration_str):
 
     value, unit = match.groups()
     value = int(value)
-    if unit == "s":
-        return value
-    if unit == "m":
-        return value * 60
-    if unit == "h":
-        return value * 3600
-    if unit == "d":
-        return value * 86400
+    if unit == "s": return value
+    if unit == "m": return value * 60
+    if unit == "h": return value * 3600
+    if unit == "d": return value * 86400
     return None
 
 def format_time(seconds: int):
     minutes = seconds // 60
     seconds = seconds % 60
     return f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
+
+def load_giveaways():
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w") as f:
+            json.dump({}, f)
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
+
+def save_giveaways(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
 def setup(bot: commands.Bot):
     @bot.tree.command(name="giveaway", description="Lancer un giveaway (admins uniquement).")
@@ -67,6 +78,20 @@ def setup(bot: commands.Bot):
         message = await interaction.original_response()
         await message.add_reaction("🎉")
 
+        # 💾 Enregistrement dans giveaway_data.json
+        data = load_giveaways()
+        data[str(message.id)] = {
+            "message_id": message.id,
+            "channel_id": message.channel.id,
+            "description": description,
+            "reward": reward,
+            "end_time": (datetime.utcnow() + timedelta(seconds=total_seconds)).isoformat(),
+            "author_id": interaction.user.id,
+            "winners": winners,
+            "status": "active"
+        }
+        save_giveaways(data)
+
         # Mise à jour toutes les 10 secondes
         update_interval = 10
         while remaining_seconds > 0:
@@ -75,13 +100,15 @@ def setup(bot: commands.Bot):
             embed.set_field_at(1, name="⏳ Fin dans", value=format_time(max(remaining_seconds, 0)))
             await message.edit(embed=embed)
 
-        # Fin du giveaway
+        # Tirage
         message = await interaction.channel.fetch_message(message.id)
         users = await message.reactions[0].users().flatten()
         users = [u for u in users if not u.bot]
 
         if not users:
             await interaction.followup.send("❌ Giveaway terminé, mais personne n'a participé.")
+            data[str(message.id)]["status"] = "finished"
+            save_giveaways(data)
             return
 
         winners = min(winners, len(users))
@@ -92,3 +119,7 @@ def setup(bot: commands.Bot):
         result += "**Gagnant(s) :**\n" + "\n".join(f"• {u.mention}" for u in chosen)
 
         await interaction.followup.send(result)
+
+        # ✅ Marquer comme terminé
+        data[str(message.id)]["status"] = "finished"
+        save_giveaways(data)
