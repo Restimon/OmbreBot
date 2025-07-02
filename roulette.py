@@ -180,6 +180,8 @@ def can_start_new_team(data, user_id):
     return has_team(data, user_id)
 
 def reset_cooldown(data, user_id):
+    if user_id not in data:
+        data[user_id] = {}
     data[user_id]["last_used"] = datetime.utcnow().isoformat()
 
 def get_previous_team(data, user_id):
@@ -279,11 +281,20 @@ def setup(bot: commands.Bot):
         user_id = str(interaction.user.id)
         data = load_data()
 
-        if nombre < 1 or nombre > 8:
+        # Assure que la structure utilisateur existe
+        if user_id not in data:
+            data[user_id] = {
+                "current_team": [],
+                "previous_team": [],
+                "last_used": "1970-01-01T00:00:00",
+                "history": []
+            }
+
+        if not (1 <= nombre <= 8):
             await interaction.response.send_message("❌ Le nombre doit être entre 1 et 8.", ephemeral=True)
             return
 
-        # Cooldown check
+        # Vérification du cooldown
         on_cd, remaining = is_on_cooldown(user_id, data)
         if on_cd:
             await interaction.response.send_message(
@@ -294,7 +305,7 @@ def setup(bot: commands.Bot):
 
         await interaction.response.defer()
 
-        # Si a déjà une team, demande confirmation (reroll ou nouvelle team)
+        # Si une team existe déjà, proposer choix reroll ou nouvelle team
         if has_team(data, user_id):
             choix = await ask_reroll_or_new(bot, interaction)
             if choix is None:
@@ -302,7 +313,6 @@ def setup(bot: commands.Bot):
                 return
 
             if choix == "Refaire une nouvelle team complète":
-                # Demander nombre de personnages
                 await interaction.followup.send("Combien de personnages veux-tu dans ta nouvelle team ? (1 à 8)", ephemeral=True)
                 nombre_nouvelle_team = await ask_number(interaction, "Donne un nombre entre 1 et 8 :", 1, 8)
                 if nombre_nouvelle_team is None:
@@ -327,14 +337,14 @@ def setup(bot: commands.Bot):
                     embed.description = team_to_str(current_display)
                     await message.edit(embed=embed)
 
-                # GIF final après team complète
                 embed.title = "🎲 Team complète !"
                 embed.set_image(url="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif")
                 await message.edit(embed=embed)
-                          
+
                 reset_cooldown(data, user_id)
                 save_team(data, user_id, team)
                 save_data(data)
+
                 await interaction.followup.send(mention_team(interaction.user.mention, team))
                 return
 
@@ -345,13 +355,15 @@ def setup(bot: commands.Bot):
                     return
 
                 team = await reroll_characters(bot, interaction, team)
+
                 reset_cooldown(data, user_id)
                 save_team(data, user_id, team)
                 save_data(data)
+
                 await interaction.followup.send(mention_team(interaction.user.mention, team))
                 return
 
-        # Sinon, pas de team actuelle, on tire une nouvelle team normale
+        # Sinon pas de team actuelle, tirage normal
         previous_team = get_current_team(data, user_id)
         available = get_available_classes(previous_team)
         if nombre > len(available):
@@ -379,4 +391,3 @@ def setup(bot: commands.Bot):
         save_team(data, user_id, team)
         save_data(data)
         await interaction.followup.send(mention_team(interaction.user.mention, team))
-
