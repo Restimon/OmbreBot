@@ -1,5 +1,3 @@
-# profile.py
-
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -48,12 +46,12 @@ def setup(bot: commands.Bot):
                 inline=False
             )
 
-        # Cooldown
+        # Cooldown 5 minutes (comme dans roulette)
         last_used_str = data.get(user_id, {}).get("last_used")
         if last_used_str:
             last_used = datetime.fromisoformat(last_used_str)
             now = datetime.utcnow()
-            cooldown_end = last_used + timedelta(hours=1)
+            cooldown_end = last_used + timedelta(minutes=5)  # 5 minutes cooldown
             if now < cooldown_end:
                 remaining = cooldown_end - now
                 minutes = int(remaining.total_seconds() // 60)
