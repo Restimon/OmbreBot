@@ -34,17 +34,6 @@ def format_timedelta(td: timedelta):
     seconds = total_seconds % 60
     return f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
 
-def make_final_embed(user_mention, team, title_text):
-    embed = discord.Embed(title=title_text, color=discord.Color.dark_orange())
-    embed.description = (
-        f"La team de {user_mention} est composée de :\n\n" +
-        "\n".join(f"• {cls}" for cls in team) +
-        "\n\nAinsi, la roulette a parlé !"
-    )
-    # Optionnel : ajouter une miniature si tu veux
-    # embed.set_thumbnail(url="https://url.de/ton/image.png")
-    return embed
-
 def setup(bot: commands.Bot):
     @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
@@ -58,7 +47,7 @@ def setup(bot: commands.Bot):
         data = load_data()
         now = datetime.utcnow()
 
-        # Cooldown 1h ou 5min selon le type de cooldown stocké
+        # Cooldown 1h ou 5min selon le cooldown_type stocké
         cooldown_type = data.get(user_id, {}).get("cooldown_type", "roulette")
         last_time_str = data.get(user_id, {}).get("last_used")
         if last_time_str:
@@ -97,6 +86,7 @@ def setup(bot: commands.Bot):
             embed.description = "\n".join(f"• {c}" for c in current_display)
             await message.edit(embed=embed)
 
+        # Mise à jour de l'embed avec le gif final
         embed.title = "🎲 Team complète !"
         embed.description = "\n".join(f"• {c}" for c in team)
         embed.set_image(url=GIF_FINAL)
@@ -143,10 +133,12 @@ def setup(bot: commands.Bot):
                 new_class = random.choice(reroll_pool)
                 team[index] = new_class
 
-                embed = make_final_embed(interaction.user.mention, team, "✅ Reroll effectué !")
+                embed.title = "✅ Reroll effectué !"
+                embed.description = "\n".join(f"• {c}" for c in team)
+                embed.set_image(url=GIF_FINAL)
                 await message.edit(embed=embed)
 
-                # Suppression des réactions après reroll
+                # Supprime les réactions après reroll
                 try:
                     await message.clear_reactions()
                 except:
@@ -159,7 +151,7 @@ def setup(bot: commands.Bot):
                 save_data(data)
 
             except asyncio.TimeoutError:
-                embed = make_final_embed(interaction.user.mention, team, "⏳ Temps écoulé ! Aucun reroll effectué.")
+                embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
                 await message.edit(embed=embed)
                 try:
                     await message.clear_reactions()
