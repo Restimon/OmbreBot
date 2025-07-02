@@ -5,6 +5,7 @@ import random
 import asyncio
 import json
 import os
+import data
 from datetime import datetime, timedelta
 
 DATA_FILE = "roulette_data.json"
