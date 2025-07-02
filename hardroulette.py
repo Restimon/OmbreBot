@@ -49,7 +49,7 @@ def setup(bot: commands.Bot):
         data = load_data()
         now = datetime.utcnow()
 
-        # Cooldown 1h ou 5min selon le cooldown_type
+        # Gestion cooldown 1h ou 5 min selon cooldown_type
         cooldown_type = data.get(user_id, {}).get("cooldown_type", "hardroulette")
         last_time_str = data.get(user_id, {}).get("last_used")
         if last_time_str:
@@ -139,7 +139,7 @@ def setup(bot: commands.Bot):
                 embed.set_image(url=GIF_FINAL)
                 await message.edit(embed=embed)
 
-                # Supprime les réactions après reroll
+                # Suppression des réactions après reroll
                 try:
                     await message.clear_reactions()
                 except:
