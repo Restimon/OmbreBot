@@ -41,7 +41,7 @@ def setup(bot: commands.Bot):
         if user_id in data:
             last_time = datetime.fromisoformat(data[user_id]["last_used"])
             if now < last_time + timedelta(minutes=5):
-                remaining = (last_time + timedelta(hours=1)) - now
+                remaining = (last_time + timedelta(minutes=5)) - now
                 minutes = int(remaining.total_seconds() // 60)
                 seconds = int(remaining.total_seconds() % 60)
                 await interaction.followup.send(f"⏳ Tu dois attendre encore {minutes}m{seconds}s avant de relancer une roulette.")
@@ -78,7 +78,10 @@ def setup(bot: commands.Bot):
         save_data(data)
 
         if len(team) > 1:
-            embed.title = "🎯 Tu peux reroll **1 seul** personnage. Choisis via les réactions ci-dessous (30s)"
+            embed.set_image(url="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdngwZWtzYzlyOG95YXFuNHNkbmxxYnFoZWd6bW5sODhtbGJtaDBybSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf2YTgF5upXUTm0/giphy.gif")
+            await message.edit(embed=embed)
+
+            embed.title = "🎯 Tu peux reroll **1 seul** personnage. Choisis via les réactions ci-dessous (15s)"
             await message.edit(embed=embed)
 
             emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"]
@@ -93,27 +96,27 @@ def setup(bot: commands.Bot):
                 )
 
             try:
-                reaction, user = await bot.wait_for("reaction_add", timeout=30.0, check=check)
+                reaction, user = await bot.wait_for("reaction_add", timeout=15.0, check=check)
                 index = emojis.index(str(reaction.emoji))
                 rerolled_class = team[index]
-            
-                reroll_pool = [c for c in VALID_CLASSES if c not in team]
+
+                reroll_pool = [c for c in ALL_CLASSES if c not in team]
                 new_class = random.choice(reroll_pool)
                 team[index] = new_class
-            
+
                 embed.title = "✅ Reroll effectué !"
                 embed.description = "\n".join(f"• {c}" for c in team)
                 await message.edit(embed=embed)
-            
+
                 data[user_id]["current_team"] = team
                 data[user_id]["history"].append(new_class)
                 save_data(data)
-            
+
                 # Enlever les réactions du bot et de l'utilisateur
                 for emoji in emojis[:len(team)]:
                     await message.remove_reaction(emoji, bot.user)
                     await message.remove_reaction(emoji, interaction.user)
-            
+
             except asyncio.TimeoutError:
                 embed.title = "⏳ Temps écoulé ! Aucun reroll effectué."
                 description = f"La team de {interaction.user.mention} est composée de :\n\n"
@@ -122,10 +125,8 @@ def setup(bot: commands.Bot):
                 embed.description = description
                 embed.set_thumbnail(url=interaction.user.display_avatar.url)
                 await message.edit(embed=embed)
-            
+
                 # Enlever les réactions du bot et de l'utilisateur aussi en cas de timeout
                 for emoji in emojis[:len(team)]:
                     await message.remove_reaction(emoji, bot.user)
                     await message.remove_reaction(emoji, interaction.user)
-
-
