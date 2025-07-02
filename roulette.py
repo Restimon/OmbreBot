@@ -61,11 +61,12 @@ def setup(bot: commands.Bot):
             embed.description = "\n".join(f"• {c}" for c in current_display)
             await message.edit(embed=embed)
 
-        # Enregistrement
+        # Enregistrement des données
         data[user_id] = {
             "current_team": team,
             "previous_team": previous_team,
-            "last_used": now.isoformat()
+            "last_used": now.isoformat(),
+            "history": data.get(user_id, {}).get("history", []) + team
         }
         save_data(data)
 
@@ -101,7 +102,9 @@ def setup(bot: commands.Bot):
                 embed.description = "\n".join(f"• {c}" for c in team)
                 await message.edit(embed=embed)
 
+                # Sauvegarde post-reroll
                 data[user_id]["current_team"] = team
+                data[user_id]["history"].append(new_class)
                 save_data(data)
 
             except asyncio.TimeoutError:
