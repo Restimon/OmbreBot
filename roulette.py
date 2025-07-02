@@ -29,7 +29,10 @@ def save_data(data):
 def is_on_cooldown(user_id, data, cooldown_minutes=5):
     if user_id not in data:
         return False, None
-    last_time = datetime.fromisoformat(data[user_id]["last_used"])
+    last_time_str = data[user_id].get("last_used")
+    if not last_time_str:
+        return False, None
+    last_time = datetime.fromisoformat(last_time_str)
     now = datetime.utcnow()
     if now < last_time + timedelta(minutes=cooldown_minutes):
         return True, (last_time + timedelta(minutes=cooldown_minutes)) - now
@@ -74,130 +77,6 @@ async def ask_confirmation(interaction, content, options):
         return None
     return view.select.value
 
-async def ask_number(interaction, prompt, min_val, max_val):
-    """
-    Demande à l'utilisateur de répondre un nombre dans un délai, en message privé.
-    """
-    await interaction.user.send(prompt)
-    def check(m):
-        return m.author == interaction.user and m.content.isdigit() and min_val <= int(m.content) <= max_val
-
-    try:
-        msg = await interaction.client.wait_for('message', check=check, timeout=30)
-        return int(msg.content)
-    except asyncio.TimeoutError:
-        await interaction.user.send("⏳ Temps écoulé, commande annulée.")
-        return None
-
-def generate_random_team(exclude_list, size):
-    pool = get_available_classes(exclude_list)
-    if size > len(pool):
-        return None
-    return random.sample(pool, size)
-
-async def reroll_characters(bot, interaction, team):
-    """
-    Permet de reroll 1 ou plusieurs personnages de la team.
-    """
-    emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"]
-    # Affiche la team et demande quelles positions reroll
-    embed = discord.Embed(
-        title="🎯 Choisis le(s) personnage(s) à reroll (max 8 choix) via réactions",
-        description=team_to_str(team),
-        color=discord.Color.green()
-    )
-    message = await interaction.followup.send(embed=embed)
-
-    # Ajout des réactions selon la taille
-    for i in range(len(team)):
-        await message.add_reaction(emojis[i])
-
-    # Stocke les indices choisis
-    chosen_indices = set()
-
-    def check(reaction, user):
-        return (
-            user == interaction.user and
-            reaction.message.id == message.id and
-            str(reaction.emoji) in emojis[:len(team)]
-        )
-
-    # Attend plusieurs réactions jusqu'à timeout ou confirmation
-    try:
-        while True:
-            reaction, user = await bot.wait_for("reaction_add", timeout=30.0, check=check)
-            idx = emojis.index(str(reaction.emoji))
-            if idx in chosen_indices:
-                # Si déjà choisi, on ignore
-                continue
-            chosen_indices.add(idx)
-
-            # Optionnel : montrer les persos choisis
-            chosen_chars = [team[i] for i in sorted(chosen_indices)]
-            desc = team_to_str(team) + "\n\n🎲 Reroll :\n" + "\n".join(f"• {c}" for c in chosen_chars)
-            embed.description = desc
-            await message.edit(embed=embed)
-
-            # Si max atteint on sort
-            if len(chosen_indices) >= 8:
-                break
-    except asyncio.TimeoutError:
-        pass
-
-    if not chosen_indices:
-        await interaction.followup.send("⏳ Aucun personnage choisi pour reroll.", ephemeral=True)
-        return team
-
-    # Reroll les persos choisis
-    available_pool = get_available_classes(team)
-    team_new = team.copy()
-    for i in chosen_indices:
-        if not available_pool:
-            break
-        new_char = random.choice(available_pool)
-        available_pool.remove(new_char)
-        team_new[i] = new_char
-
-    await interaction.followup.send(
-        f"✅ Reroll effectué pour {len(chosen_indices)} personnage(s) !",
-        ephemeral=True
-    )
-    return team_new
-
-def format_timedelta(td: timedelta):
-    total_seconds = int(td.total_seconds())
-    minutes = total_seconds // 60
-    seconds = total_seconds % 60
-    return f"{minutes}m {seconds}s"
-
-def mention_team(user_mention, team):
-    return f"La team de {user_mention} est composée de :\n\n" + team_to_str(team) + "\n\nAinsi, la roulette a parlé !"
-
-def has_team(data, user_id):
-    return user_id in data and "current_team" in data[user_id] and data[user_id]["current_team"]
-
-def can_start_new_team(data, user_id):
-    # S’il a déjà une team, il doit confirmer pour remplacer
-    return has_team(data, user_id)
-
-def reset_cooldown(data, user_id):
-    if user_id not in data:
-        data[user_id] = {}
-    data[user_id]["last_used"] = datetime.utcnow().isoformat()
-
-def get_previous_team(data, user_id):
-    return data.get(user_id, {}).get("current_team", [])
-
-def save_team(data, user_id, team):
-    prev_team = get_previous_team(data, user_id)
-    history = data.get(user_id, {}).get("history", [])
-    data[user_id] = {
-        "current_team": team,
-        "previous_team": prev_team,
-        "last_used": datetime.utcnow().isoformat(),
-        "history": history + team
-    }
-
 async def ask_reroll_or_new(bot, interaction):
     choice = await ask_confirmation(
         interaction,
@@ -205,19 +84,20 @@ async def ask_reroll_or_new(bot, interaction):
         ["Refaire une nouvelle team complète", "Reroll un ou plusieurs personnages"]
     )
     return choice
-
 def remove_team_classes(team, exclude_list):
+    # Retire de la team toutes les classes qui sont dans exclude_list
     return [c for c in team if c not in exclude_list]
 
 def remove_from_list(source, to_remove):
+    # Retire les éléments de to_remove de la liste source
     return [x for x in source if x not in to_remove]
 
 def get_reroll_pool(team, previous_team):
-    # On enlève les persos de la team actuelle
+    # Retourne les classes disponibles pour reroll (hors celles de la team actuelle)
     return [c for c in ALL_CLASSES if c not in team]
 
 def get_new_team_pool(previous_team):
-    # Pour nouvelle team, on enlève la team actuelle
+    # Retourne les classes disponibles pour une nouvelle team (hors celles de l’ancienne)
     return [c for c in ALL_CLASSES if c not in previous_team]
 
 def clean_class_name(name):
@@ -253,7 +133,7 @@ def is_cooldown_active(data, user_id, cooldown=5):
 def remaining_cooldown(data, user_id, cooldown=5):
     last_used_str = data[user_id].get("last_used", None)
     if not last_used_str:
-        return 0
+        return timedelta(seconds=0)
     last_used = datetime.fromisoformat(last_used_str)
     remaining = (last_used + timedelta(minutes=cooldown)) - datetime.utcnow()
     return remaining if remaining.total_seconds() > 0 else timedelta(seconds=0)
@@ -262,9 +142,8 @@ def is_team_empty(team):
     return not team or len(team) == 0
 
 def can_use_roulette(data, user_id):
-    if not is_cooldown_active(data, user_id):
-        return True
-    return False
+    # Vérifie si le cooldown n’est pas actif
+    return not is_cooldown_active(data, user_id)
 
 def format_cooldown_string(td: timedelta) -> str:
     total_seconds = int(td.total_seconds())
