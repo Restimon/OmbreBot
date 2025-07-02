@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from config import TOKEN
 import roulette  # roulette.py doit être dans le même dossier
+import profile
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -14,6 +15,7 @@ async def on_ready():
 
 # Enregistre la commande /roulette
 roulette.setup(bot)
+profile.setup(bot)
 
 # Démarre le bot
 bot.run(TOKEN)
