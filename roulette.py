@@ -116,4 +116,5 @@ def setup(bot: commands.Bot):
                 description += "\n".join(f"• {c}" for c in team)
                 description += "\n\nAinsi, la roulette a parlé !"
                 embed.description = description
+                embed.set_image(url="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif")
                 await message.edit(embed=embed)
