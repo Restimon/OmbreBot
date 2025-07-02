@@ -346,7 +346,6 @@ def setup(bot: commands.Bot):
                 save_team(data, user_id, team)
                 save_data(data)
 
-                await interaction.followup.send(mention_team(interaction.user.mention, team))
                 return
 
             elif choix == "Reroll un ou plusieurs personnages":
@@ -361,7 +360,6 @@ def setup(bot: commands.Bot):
                 save_team(data, user_id, team)
                 save_data(data)
 
-                await interaction.followup.send(mention_team(interaction.user.mention, team))
                 return
 
         # Sinon pas de team actuelle, tirage normal
@@ -385,10 +383,10 @@ def setup(bot: commands.Bot):
             await message.edit(embed=embed)
 
         embed.title = "🎲 Team complète !"
+        embed.description = team_to_str(team)  # Affiche la liste des classes dans l’embed
         embed.set_image(url="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzgxYmNranhqb2xsNXZhdWVkdXl1dWV1OHJkNTkxb2hqMjB5a2RoMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9Igw8lZVGkO0hFle/giphy.gif")
         await message.edit(embed=embed)
-
+        
         reset_cooldown(data, user_id)
         save_team(data, user_id, team)
         save_data(data)
-        await interaction.followup.send(mention_team(interaction.user.mention, team))
