@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import json
 import os
+import data
 from datetime import datetime, timedelta
 from collections import Counter
 
