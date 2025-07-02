@@ -154,6 +154,9 @@ def format_cooldown_string(td: timedelta) -> str:
     else:
         return f"{seconds}s"
 
+def has_team(data, user_id):
+    return user_id in data and "current_team" in data[user_id] and bool(data[user_id]["current_team"])
+
 def setup(bot: commands.Bot):
     @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
