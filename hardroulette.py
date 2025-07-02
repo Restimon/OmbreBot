@@ -279,9 +279,10 @@ def format_cooldown_string(td: timedelta) -> str:
         return f"{seconds}s"
 
 def setup(bot: commands.Bot):
-    @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
+    @bot.tree.command(name="hardroulette", description="Tire une team difficile de classes Dofus (excluant certaines classes).")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
-    async def roulette(interaction: discord.Interaction, nombre: int):
+    async def hardroulette(interaction: discord.Interaction, nombre: int):
+        # Le même code que ta fonction roulette, adapté ici
         user_id = str(interaction.user.id)
         data = load_data()
 
@@ -323,14 +324,14 @@ def setup(bot: commands.Bot):
                     return
 
                 previous_team = get_current_team(data, user_id)
-                pool = get_new_team_pool(previous_team)
+                pool = [c for c in get_new_team_pool(previous_team) if c not in EXCLUDED_CLASSES]
                 if nombre_nouvelle_team > len(pool):
                     await interaction.followup.send(f"❌ Impossible de tirer {nombre_nouvelle_team} classes, seulement {len(pool)} disponibles.", ephemeral=True)
                     return
 
                 team = random.sample(pool, nombre_nouvelle_team)
 
-                embed = discord.Embed(title="🎲 Roulette en cours...", color=discord.Color.orange())
+                embed = discord.Embed(title="🎲 Hard Roulette en cours...", color=discord.Color.orange())
                 embed.set_image(url="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdngwZWtzYzlyOG95YXFuNHNkbmxxYnFoZWd6bW5sODhtbGJtaDBybSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf2YTgF5upXUTm0/giphy.gif")
                 message = await interaction.followup.send(embed=embed)
 
@@ -369,14 +370,14 @@ def setup(bot: commands.Bot):
 
         # Sinon pas de team actuelle, tirage normal
         previous_team = get_current_team(data, user_id)
-        available = get_available_classes(previous_team)
+        available = [c for c in get_available_classes(previous_team) if c not in EXCLUDED_CLASSES]
         if nombre > len(available):
             await interaction.followup.send(f"❌ Impossible de tirer {nombre} classes, seulement {len(available)} disponibles.", ephemeral=True)
             return
 
         team = random.sample(available, nombre)
 
-        embed = discord.Embed(title="🎲 Roulette en cours...", color=discord.Color.orange())
+        embed = discord.Embed(title="🎲 Hard Roulette en cours...", color=discord.Color.orange())
         embed.set_image(url="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdngwZWtzYzlyOG95YXFuNHNkbmxxYnFoZWd6bW5sODhtbGJtaDBybSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf2YTgF5upXUTm0/giphy.gif")
         message = await interaction.followup.send(embed=embed)
 
