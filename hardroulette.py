@@ -276,7 +276,7 @@ def format_cooldown_string(td: timedelta) -> str:
         return f"{seconds}s"
 
 def setup(bot: commands.Bot):
-    @bot.tree.command(name="roulette", description="Tire une team aléatoire de classes Dofus.")
+    @bot.tree.command(name="hardroulette", description="Tire une team sans Feca, Pandawa, Enutrof ni Cra.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
     async def roulette(interaction: discord.Interaction, nombre: int):
         user_id = str(interaction.user.id)
