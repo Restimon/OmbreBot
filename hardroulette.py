@@ -43,8 +43,8 @@ def setup(bot: commands.Bot):
 
         if user_id in data:
             last_time = datetime.fromisoformat(data[user_id]["last_used"])
-            if now < last_time + timedelta(hours=1):
-                remaining = (last_time + timedelta(hours=1)) - now
+            if now < last_time + timedelta(minutes=5):
+                remaining = (last_time + timedelta(minutes=5)) - now
                 minutes = int(remaining.total_seconds() // 60)
                 seconds = int(remaining.total_seconds() % 60)
                 await interaction.followup.send(f"⏳ Tu dois attendre encore {minutes}m{seconds}s avant de relancer une roulette.")
