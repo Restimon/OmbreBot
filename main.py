@@ -4,6 +4,7 @@ from config import TOKEN
 import roulette  # roulette.py doit être dans le même dossier
 import profile
 import giveaway
+import hardroulette
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -18,6 +19,7 @@ async def on_ready():
 roulette.setup(bot)
 profile.setup(bot)
 giveaway.setup(bot)
+hardroulette.setup(bot)
 
 # Démarre le bot
 bot.run(TOKEN)
