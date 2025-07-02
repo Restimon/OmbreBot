@@ -6,6 +6,7 @@ import profile
 import giveaway
 import hardroulette
 import set_team
+import help
 
 intents = discord.Intents.default()  # Crée les intents par défaut (ne contient pas les intents privilégiés)
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -20,5 +21,6 @@ profile.setup(bot)
 giveaway.setup(bot)
 hardroulette.setup(bot)
 set_team.setup(bot)
+help.setup(bot)
 
 bot.run(TOKEN)
