@@ -34,7 +34,7 @@ def save_data(data):
 def setup(bot: commands.Bot):
     @bot.tree.command(name="hardroulette", description="Tire une team aléatoire sans Feca, Pandawa, Enutrof ni Cra.")
     @app_commands.describe(nombre="Nombre de personnages à tirer (1 à 8)")
-    async def hardroulette(interaction: discord.Interaction, nombre: int = 4):
+    async def hardroulette(interaction: discord.Interaction, nombre: int ):
         if nombre < 1 or nombre > 8:
             await interaction.response.send_message("❌ Le nombre doit être entre 1 et 8.", ephemeral=True)
             return
