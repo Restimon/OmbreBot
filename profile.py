@@ -6,6 +6,7 @@ from discord.ext import commands
 import json
 import os
 from datetime import datetime, timedelta
+from collections import Counter
 
 DATA_FILE = "roulette_data.json"
 
@@ -72,6 +73,17 @@ def setup(bot: commands.Bot):
             embed.add_field(
                 name="⏱️ Cooldown",
                 value="Jamais utilisé",
+                inline=False
+            )
+
+        # Stat : classe la plus tirée
+        history = data.get(user_id, {}).get("history", [])
+        if history:
+            counts = Counter(history)
+            top = counts.most_common(1)[0]  # (classe, nombre)
+            embed.add_field(
+                name="📈 Classe la plus tirée",
+                value=f"{top[0]} ({top[1]} fois)",
                 inline=False
             )
 
